@@ -63,4 +63,19 @@ jobs:
       - name: 2STAG
         run: echo publish to STAG
         
+  publish2prod:
+    #if: ${{ startsWith(github.ref, 'refs/tags/release') }}  
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    environment: release
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a single command using the runners shell
+      - name: 2STAG
+        run: echo publish to PROD
+        
     
