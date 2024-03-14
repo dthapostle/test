@@ -35,6 +35,7 @@ jobs:
           echo Add other actions to build,
           echo test, and deploy your project.
   publish2dev:
+    #if: ! ${{ startsWith(github.ref, 'refs/tags/staging') }}  
     needs: [build]
     runs-on: ubuntu-latest
 
