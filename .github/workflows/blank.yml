@@ -50,7 +50,7 @@ jobs:
 
   publish2stag:
     #if: ${{ startsWith(github.ref, 'refs/tags/staging') }}  
-    needs: [build]
+    needs: [publish2dev]
     runs-on: ubuntu-latest
 
     environment: staging
@@ -65,7 +65,7 @@ jobs:
         
   publish2prod:
     #if: ${{ startsWith(github.ref, 'refs/tags/release') }}  
-    needs: [build]
+    needs: [publish2stag]
     runs-on: ubuntu-latest
 
     environment: production
