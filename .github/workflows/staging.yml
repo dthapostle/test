@@ -4,6 +4,9 @@ on:
   push:
     tags: [ staging ] 
 
+env:
+    TAG: ${{ github.sha }}
+
 jobs:
     # This workflow contains a single job called "build"
     build:
@@ -13,4 +16,4 @@ jobs:
         steps:
           - name: Run for tagged commit
             run: |
-                echo Tagged commit: {{ github.sha }}
+                echo Tagged commit: ${{ env.TAG }}
