@@ -1,0 +1,65 @@
+Option Explicit
+ 
+
+Function OriginalJiraStart(rqItem)
+    Dim hlog : hlog = log_begin("FixJiraDates - OriginalJiraStart(" & rqItem.UniqueID & ")")
+    Set History = rqItem.History
+    For Each hItem In History
+        If hItem.UserField = "JIRAProcessingStart" Then
+            If hItem.OldValue <> "" Then
+                log_d "JiraProcessingStart was modified " & hItem.OldValue
+            Else 
+                log_d "JiraProcessingStart was created " & hItem.NewValue
+                OriginalJiraStart = hItem.NewValue
+            End If
+        End If
+    Next
+End Function
+
+Sub SearchAndFixWrongJiraUpdates()
+    Dim hlog : hlog = log_begin("FixJiraDates - SearchAndFixWrongJiraUpdates")
+
+    Dim rqListToFix: Set rqListToFix = ActiveSession.CreateRequestList
+
+    Set fldTEs = ActiveSession.RequestFolders("WorkItems\ITSMServiceCalls")
+    Set HSearch = fldTEs.MakeHistorySearch
+    HSearch.StartDate = "2024-01-01"
+    HSearch.EndDate = Now
+    HSearch.Field = "JIRAProcessingStart"
+    HSearch.Type = otHistSearchModification
+    HSearch.ModifiedBy = "tech_omni_jira"
+
+    Set qryJiraMod = fldTEs.MakeQuery
+    Set colUID = qryJiraMod.AddColumn("UniqueId")
+    colUID.Type = otQColTypeUniqueId
+    fldTEs.AddHistorySearch HSearch
+    Set qryRes = qryJiraMod.Execute
+
+    For i = 0 To qryRes.RowCount - 1
+        Set rqSvcCall =  ActiveSession.GetRequestByUniqueId(qryRes(i, 0))
+        log_d "Request: " & rqSvcCall.UniqueId & ": JiraProcessing: " & rqSvcCall.Fields("JIRAProcessingStart").Value & " - " & rqSvcCall.Fields("JIRAProcessingFinish").Value
+        rqSvcCall.Fields("JIRAProcessingStart").TValue = OriginalJiraStart(rqSvcCall)
+        rqListToFix.AddToSaveListEx rqSvcCall, 1024
+        log_d "Original JiraProcessingStart: " & rqSvcCall.Fields("JIRAProcessingStart").Value
+    Next
+    'rqListToFix.SaveBulk 1 + 8 + 16 + 128 + 256
+End Sub
+
+
+LogSettings.LogLevel = LOG_LEVEL_DEBUG
+LogSettings.LogInternalUsers = True
+LogSettings.LogMilliseconds = True
+LogSettings.EnableIndents = True
+
+Dim hlog : hlog = log_begin("FixJiraDates")
+log_d "Start"
+
+Call SearchAndFixWrongJiraUpdates()
+If (Err <> 0) Then
+    log_e "Failed to perform 'FixJiraDates'. " & ActiveSession.GetSystemParameter("Global.Messages", "ERR_GENERIC_ERROR") & " " & Err.Description
+    log_rst hlog
+    Err.Clear
+End If
+ 
+log_d "Finish"
+log_end
